@@ -96,7 +96,7 @@ def find_split(data):
                     best_split = split_point
                     best_feature = feature
 
-    return best_gain, best_split, best_feature
+    return best_feature, best_split
 
 # Update the print statement
 print(find_split(clean_data))
