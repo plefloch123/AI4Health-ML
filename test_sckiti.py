@@ -1,12 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 
 
 # Update the print statement
 clean_data = np.loadtxt('wifi_db/clean_dataset.txt')
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score
-
 # Assuming clean_data is already loaded and split into features (X) and labels (y)
 X = clean_data[:, :-1]  # All columns except the last one
 y = clean_data[:, -1]   # The last column
@@ -29,5 +28,8 @@ print(f"Information gain: {best_gain}")
 
 # Predict and calculate accuracy
 y_pred = clf.predict(X)
+print(f"Predictions size: {len(y_pred)}")
+print(f"Predictions: {y_pred}")
+print(f"True labels: {y}")
 accuracy = accuracy_score(y, y_pred)
 print(f"Accuracy: {accuracy}")
