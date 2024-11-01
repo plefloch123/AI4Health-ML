@@ -1,44 +1,78 @@
+import numpy as np
 import matplotlib.pyplot as plt
+from utils import decision_tree_learning
 
-def plot_tree(tree, depth=0, pos=None, parent_pos=None, ax=None, x_offset=0.5, y_offset=1.0):
-    if pos is None:
-        pos = {id(tree): (0.5, 1.0)}  # The root is centered at (0.5, 1.0)
-    
+def plot_tree(node, x=0.5, y=1, level=1, spacing=0.3, ax=None, width_multiplier=50, height_multiplier=2.5):
+    """
+    Recursively plots the decision tree with improved spacing.
+    :param node: Dictionary containing tree structure
+    :param x: X-coordinate of the current node
+    :param y: Y-coordinate of the current node
+    :param level: Depth level of the node in the tree
+    :param spacing: Horizontal spacing for child nodes
+    :param ax: Matplotlib Axes object
+    :param width_multiplier: Controls horizontal scaling of the plot
+    :param height_multiplier: Controls vertical scaling of the plot
+    """
+    # Initialize the figure and axes at the root level
     if ax is None:
-        fig, ax = plt.subplots(figsize=(10, 8))
-        ax.set_axis_off()  # Hide axis
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
+        max_depth = get_tree_depth(node)  # Calculate the depth of the tree
+        fig, ax = plt.subplots(figsize=(width_multiplier, height_multiplier * max_depth))
+        ax.axis("off")
 
-    # Draw connection between parent node and current node
-    if parent_pos is not None:
-        ax.plot([parent_pos[0], pos[id(tree)][0]], [parent_pos[1], pos[id(tree)][1]], 'k-', lw=2)  # Draw line
-    
-    # Check if it is a leaf node
-    if 'label' in tree:
-        node_text = f"Leaf\nLabel: {tree['label']}\nDepth: {tree['depth']}"
-        ax.text(pos[id(tree)][0], pos[id(tree)][1], node_text, ha='center', va='center', 
-                bbox=dict(facecolor='lightgreen', edgecolor='black'))
+    # Check if the node is a leaf
+    if node["leaf"]:
+        ax.text(x, y, f"Leaf: {node['label']}", 
+                ha="center", va="center", bbox=dict(boxstyle="round,pad=0.3", 
+                                                    edgecolor="black", facecolor="lightblue"))
     else:
-        # Not a leaf node, plot attribute and split value
-        node_text = f"Node\nAttr: {tree['attribute']}\nVal: {tree['value']}\nDepth: {tree['depth']}"
-        ax.text(pos[id(tree)][0], pos[id(tree)][1], node_text, ha='center', va='center', 
-                bbox=dict(facecolor='lightblue', edgecolor='black'))
+        # Plot current node with split info
+        ax.text(x, y, f"{node['attribute']} <= {node['value']:.2f}",
+                ha="center", va="center", bbox=dict(boxstyle="round,pad=0.3", 
+                                                    edgecolor="black", facecolor="lightgreen"))
+        
+        # Adjust horizontal spacing based on the level
+        adjusted_spacing = spacing / (level + 1)
+        
+        # Calculate child node positions
+        left_x = x - adjusted_spacing
+        right_x = x + adjusted_spacing
+        child_y = y - 0.15
+        
+        # Draw the branches
+        ax.plot([x, left_x], [y, child_y], "k-", lw=1)
+        ax.plot([x, right_x], [y, child_y], "k-", lw=1)
+        
+        # Recursively plot left and right children
+        plot_tree(node["left"], x=left_x, y=child_y, level=level + 1, spacing=spacing, ax=ax, 
+                  width_multiplier=width_multiplier, height_multiplier=height_multiplier)
+        plot_tree(node["right"], x=right_x, y=child_y, level=level + 1, spacing=spacing, ax=ax, 
+                  width_multiplier=width_multiplier, height_multiplier=height_multiplier)
 
-    # Plot the left and right children
-    left_child = tree.get('left')
-    right_child = tree.get('right')
+def get_tree_depth(node):
+    """
+    Recursively calculate the depth of the tree.
+    :param node: Dictionary containing tree structure
+    :return: Integer representing the depth of the tree
+    """
+    if node["leaf"]:
+        return 1
+    left_depth = get_tree_depth(node["left"])
+    right_depth = get_tree_depth(node["right"])
+    return 1 + max(left_depth, right_depth)
 
-    if left_child is not None:
-        # Set position for the left child
-        pos[id(left_child)] = (pos[id(tree)][0] - x_offset / (depth + 1), pos[id(tree)][1] - y_offset)
-        plot_tree(left_child, depth + 1, pos, pos[id(tree)], ax, x_offset, y_offset)
+# Example usage with the generated decision tree
+if __name__ == "__main__":
+    # Load the clean and noisy datasets
+    clean_data = np.loadtxt('wifi_db/clean_dataset.txt')
+    noisy_data = np.loadtxt('wifi_db/noisy_dataset.txt')
 
-    if right_child is not None:
-        # Set position for the right child
-        pos[id(right_child)] = (pos[id(tree)][0] + x_offset / (depth + 1), pos[id(tree)][1] - y_offset)
-        plot_tree(right_child, depth + 1, pos, pos[id(tree)], ax, x_offset, y_offset)
+    # Plot the decision tree for the clean dataset
+    tree = decision_tree_learning(clean_data)
+    plot_tree(tree)
+    plt.show()  # Show plot after plotting clean dataset
 
-    # If it's the root call, show the plot
-    if parent_pos is None:
-        plt.show()
+    # Plot the decision tree for the noisy dataset
+    tree = decision_tree_learning(noisy_data)
+    plot_tree(tree)
+    plt.show()  # Show plot after plotting noisy dataset
